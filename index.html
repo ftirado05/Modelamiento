@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="./style.css">
+  <title>Consumo Óptimo</title>
+</head>
+<body>
+  <form id="formulario">
+    <p>Digite los datos solicitados</p>
+    <label>Velocidades(maximo 5 y separar con coma):</label><br>
+    <input name="vel" value=""><br>
+    <label>Consumos(maximo 5 y separar con coma):</label><br>
+    <input name="consumo" value=""><br><br>
+    <button type="submit">Calcular</button>
+    <button type="button" id="limpiarBtn">Limpiar</button>
+  </form>
+  <p id="resultado"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.getElementById("formulario").onsubmit = async (e) => {
+  e.preventDefault();
+
+  const velInput = document.querySelector("input[name='vel']");
+  const consumoInput = document.querySelector("input[name='consumo']");
+  const vel = velInput.value.trim();
+  const consumo = consumoInput.value.trim();
+
+  // Verificar campos vacíos
+  if (vel === '' || consumo === '') {
+    await Swal.fire({
+      title: 'Campos vacíos',
+      text: 'Por favor, ingresa los valores de velocidad y consumo.',
+      icon: 'warning',
+      confirmButtonText: 'OK',
+      background: '#222',
+      color: '#eee'
+    });
+    return; // Detener si están vacíos
+  }
+
+  const formData = new FormData();
+  formData.append("vel", vel.split(','));
+  formData.append("consumo", consumo.split(','));
+
+  const res = await fetch("calcular.php", { method: "POST", body: formData });
+  const data = await res.text();
+
+  document.getElementById("resultado").innerText = "Velocidad óptima: " + data + " km/h";
+  document.getElementById("limpiarBtn").onclick = () => {
+  document.querySelector("input[name='vel']").value = "";
+  document.querySelector("input[name='consumo']").value = "";
+  document.getElementById("resultado").innerText = "";
+};
+};
+</script>
+
+</body>
+</html>
