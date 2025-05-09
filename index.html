@@ -2,59 +2,233 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="./style.css">
   <title>Consumo Óptimo</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+  <script src="//code.tidio.co/r6wzcjsrdfj2eljthqlnxxi6zcscio2q.js" async></script>
   <form id="formulario">
     <p>Digite los datos solicitados</p>
-    <label>Velocidades(maximo 5 y separar con coma):</label><br>
-    <input name="vel" value=""><br>
-    <label>Consumos(maximo 5 y separar con coma):</label><br>
-    <input name="consumo" value=""><br><br>
+    <label>Velocidades (máximo 5, usar comas y sin espacios):</label><br>
+    <input name="vel" value="" placeholder="Ejemplo: 10,20,30,40,50"><br>
+    <label>Consumos (máximo 5, usar comas y sin espacios):</label><br>
+    <input name="consumo" value="" placeholder="Ejemplo: 1.2,3.1,2.5,4.6,7.1"><br><br>
     <button type="submit">Calcular</button>
     <button type="button" id="limpiarBtn">Limpiar</button>
   </form>
   <p id="resultado"></p>
-
+  <!-- Añadimos el gráfico -->
+  <div class="chart-container">
+    <canvas id="grafico"></canvas>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-document.getElementById("formulario").onsubmit = async (e) => {
-  e.preventDefault();
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  const velInput = document.querySelector("input[name='vel']");
-  const consumoInput = document.querySelector("input[name='consumo']");
-  const vel = velInput.value.trim();
-  const consumo = consumoInput.value.trim();
+  <a href="#" class="floating-icon" target="_blank">
+    <i class="fa-solid fa-circle-info"></i>
+  </a>
+  <script>
+    let myChart = null; // Variable global para el gráfico
 
-  // Verificar campos vacíos
-  if (vel === '' || consumo === '') {
-    await Swal.fire({
-      title: 'Campos vacíos',
-      text: 'Por favor, ingresa los valores de velocidad y consumo.',
-      icon: 'warning',
-      confirmButtonText: 'OK',
-      background: '#222',
-      color: '#eee'
-    });
-    return; // Detener si están vacíos
-  }
+    document.getElementById("formulario").onsubmit = async (e) => {
+      e.preventDefault();
 
-  const formData = new FormData();
-  formData.append("vel", vel.split(','));
-  formData.append("consumo", consumo.split(','));
+      const velInput = document.querySelector("input[name='vel']");
+      const consumoInput = document.querySelector("input[name='consumo']");
+      const vel = velInput.value.trim();
+      const consumo = consumoInput.value.trim();
 
-  const res = await fetch("calcular.php", { method: "POST", body: formData });
-  const data = await res.text();
+      // Verificar campos vacíos
+      if (vel === '' || consumo === '') {
+        await Swal.fire({
+          title: 'Campos vacíos',
+          text: 'Por favor, ingresa los valores de velocidad y consumo.',
+          icon: 'warning',
+          confirmButtonText: 'OK',
+          background: '#222',
+          color: '#eee'
+        });
+        return;
+      }
 
-  document.getElementById("resultado").innerText = "Velocidad óptima: " + data + " km/h";
-  document.getElementById("limpiarBtn").onclick = () => {
-  document.querySelector("input[name='vel']").value = "";
-  document.querySelector("input[name='consumo']").value = "";
-  document.getElementById("resultado").innerText = "";
-};
-};
-</script>
+      const formData = new FormData();
+      formData.append("vel", vel);
+      formData.append("consumo", consumo);
+
+      const res = await fetch("calcular.php", { method: "POST", body: formData });
+      const data = await res.json(); // Cambiamos a JSON para recibir más datos
+
+      // Mostrar resultado
+      document.getElementById("resultado").innerText = `Velocidad óptima: ${data.optima} km/h`;
+
+      // Graficar
+      const ctx = document.getElementById('grafico').getContext('2d');
+      if (myChart) myChart.destroy(); // Limpiar gráfico anterior
+
+      myChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Datos originales',
+              data: data.puntos.map((v, i) => ({ x: v, y: data.consumos[i] })),
+              backgroundColor: '#0f0',
+              pointRadius: 8
+            },
+            {
+              label: 'Curva de ajuste',
+              data: data.curva.map(point => ({ x: point.x, y: point.y })),
+              borderColor: '#ff0',
+              borderWidth: 2,
+              type: 'line',
+              pointRadius: 0
+            },
+            {
+              label: 'Velocidad óptima',
+              data: [{ x: parseFloat(data.optima), y: data.consumo_optimo }],
+              backgroundColor: '#f00',
+              pointRadius: 10
+            }
+          ]
+        },
+        options: {
+          scales: {
+            x: { title: { display: true, text: 'Velocidad (km/h)' } },
+            y: { title: { display: true, text: 'Consumo' } }
+          },
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: '#0f0' } }
+          }
+        }
+      });
+    };
+
+    document.getElementById("limpiarBtn").onclick = () => {
+      document.querySelector("input[name='vel']").value = "";
+      document.querySelector("input[name='consumo']").value = "";
+      document.getElementById("resultado").innerText = "";
+      if (myChart) myChart.destroy(); // Limpiar gráfico
+    };
+  </script>
+
+  
+<style>
+  body {
+  background-image: url('./img/fondo3.jpeg');
+  background-size: cover; 
+  background-position: center; 
+  background-repeat: no-repeat;
+  background-attachment: fixed; 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #020000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  margin: 0; 
+  min-height: 100vh;
+}
+
+form {
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 2px solid #000000;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  box-shadow: 0 0 15px aqua;
+  color: white;
+}
+
+label, p {
+  color: white !important; 
+  font-weight: bold;
+  text-shadow: 1px 1px 2px black;
+}
+
+input {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #000000;
+  border-radius: 6px;
+  background-color: rgba(51, 51, 51, 0.8);
+  color: rgb(255, 255, 255);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+}
+
+button {
+  width: 100%;
+  background-color: aqua;
+  color: rgba(0, 0, 0, 0.877);
+  font-weight: bold;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+button:hover {
+  background-color: #000000;
+  color: white;
+  transform: scale(1.02);
+}
+
+#resultado {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #000;
+  padding: 1rem;
+  border-radius: 6px;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: 0 0 15px aqua;
+  text-align: center;
+}
+
+.chart-container {
+  width: 100%;
+  max-width: 800px;
+  margin-top: 2rem;
+  background-color: rgba(34, 34, 34, 0.8);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  backdrop-filter: blur(5px); /* Efecto de vidrio esmerilado */
+}
+
+#grafico {
+  width: 100% !important;
+  height: 400px !important;
+}
+
+.floating-icon {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #007bff;
+  color: white;
+  font-size: 24px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+  text-decoration: none;
+  transition: transform 0.3s ease-in-out;
+}
+
+.floating-icon:hover {
+  transform: scale(1.1);
+  background-color: #0056b3;
+}
+</style>
 
 </body>
 </html>
